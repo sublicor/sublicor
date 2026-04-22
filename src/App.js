@@ -284,8 +284,10 @@ function Login({onLogin}) {
           <p style={{color:G.text3,fontSize:"12px",marginTop:"8px"}}>Sistema de gestión de producción textil</p>
         </div>
         <div className="card" style={{padding:"26px",border:`1px solid ${G.border2}`}}>
-          <div className="fg"><label className="lbl">Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="usuario@sublicor.com" onKeyDown={e=>e.key==="Enter"&&go()}/></div>
-          <div className="fg"><label className="lbl">Contraseña</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()}/></div>
+          <input type="text" name="fakeuser" style={{display:"none"}} autoComplete="username" readOnly/>
+          <input type="password" name="fakepass" style={{display:"none"}} autoComplete="new-password" readOnly/>
+          <div className="fg"><label className="lbl">Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="off" placeholder="usuario@sublicor.com" onKeyDown={e=>e.key==="Enter"&&go()}/></div>
+          <div className="fg"><label className="lbl">Contraseña</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="new-password"/></div>
           {err&&<p style={{color:G.red,fontSize:"12px",marginBottom:"12px"}}>{err}</p>}
           <button className="btn bp" style={{width:"100%"}} onClick={go} disabled={loading}>{loading?"Ingresando...":"Ingresar al sistema"}</button>
         </div>
