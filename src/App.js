@@ -286,21 +286,12 @@ function Login({onLogin}) {
         <div className="card" style={{padding:"26px",border:`1px solid ${G.border2}`}}>
           <input type="text" name="fakeuser" style={{display:"none"}} autoComplete="username" readOnly/>
           <input type="password" name="fakepass" style={{display:"none"}} autoComplete="new-password" readOnly/>
-          <div className="fg"><label className="lbl">Email</label><input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="off" placeholder="usuario@sublicor.com" onKeyDown={e=>e.key==="Enter"&&go()}/></div>
-          <div className="fg"><label className="lbl">Contraseña</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="new-password"/></div>
+          <div className="fg"><label className="lbl">Email</label><input type="text" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="off" name="noemail" placeholder="usuario@sublicor.com" onKeyDown={e=>e.key==="Enter"&&go()}/></div>
+          <div className="fg"><label className="lbl">Contraseña</label><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&go()} autoComplete="new-password" name="nopw" data-form-type="other"/></div>
           {err&&<p style={{color:G.red,fontSize:"12px",marginBottom:"12px"}}>{err}</p>}
           <button className="btn bp" style={{width:"100%"}} onClick={go} disabled={loading}>{loading?"Ingresando...":"Ingresar al sistema"}</button>
         </div>
-        <div style={{marginTop:"16px",background:G.surface,border:`1px solid ${G.border}`,borderRadius:"10px",padding:"14px"}}>
-          <p style={{fontSize:"10px",color:G.text3,marginBottom:"8px",fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.06em"}}>Usuarios demo</p>
-          {DEMO_USERS.map(u=>(
-            <div key={u.id} onClick={()=>{setEmail(u.email);setPw(u.password);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 8px",cursor:"pointer",borderRadius:"6px",transition:"background 0.1s"}}
-              onMouseOver={e=>e.currentTarget.style.background=G.card} onMouseOut={e=>e.currentTarget.style.background="transparent"}>
-              <span style={{fontSize:"12px",color:G.text2}}>{u.name}</span>
-              <GoldBadge style={{fontSize:"9px"}}>{u.role}</GoldBadge>
-            </div>
-          ))}
-        </div>
+        
       </div>
     </div>
   );
