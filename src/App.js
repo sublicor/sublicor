@@ -14,12 +14,26 @@ const supa = {
     return await r.json();
   },
   async upsertOrder(order) {
-    const r = await fetch(`${SUPA_URL}/rest/v1/orders`, {
-      method: "POST",
-      headers: {"apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates"},
-      body: JSON.stringify(order)
-    });
-    return r.ok;
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/orders`, {
+        method: "POST",
+        headers: {
+          "apikey": SUPA_KEY,
+          "Authorization": `Bearer ${SUPA_KEY}`,
+          "Content-Type": "application/json",
+          "Prefer": "resolution=merge-duplicates,return=minimal"
+        },
+        body: JSON.stringify(order)
+      });
+      if (!r.ok) {
+        const err = await r.text();
+        console.error("Supabase upsert error:", err);
+      }
+      return r.ok;
+    } catch(e) {
+      console.error("Supabase upsert exception:", e);
+      return false;
+    }
   },
   async deleteOrder(id) {
     const r = await fetch(`${SUPA_URL}/rest/v1/orders?id=eq.${id}`, {
@@ -1963,14 +1977,34 @@ const [orders,setOrders]=useState([]);
 
 
   const showToast=(msg,color=G.gold)=>{setToast({msg,color});setTimeout(()=>setToast(null),2500);};
-  const addOrder=o=>{setOrders(p=>[...p,o]);showToast(`Pedido #${fmtNum(o.numero)} creado`);};
+  const addOrder=o=>{
+    setOrders(p=>[...p,o]);
+    const dbOrder={id:o.id,numero:o.numero,cliente:o.cliente||"",equipo:o.equipo||"",contacto:o.contacto||"",fechaCreacion:o.fechaCreacion||"",fechaEntrega:o.fechaEntrega||"",observaciones:o.observaciones||"",observacionesTaller:o.observacionesTaller||"",estado:o.estado||"pendiente",taller:o.taller||"",tallerCustom:o.tallerCustom||"",urgente:o.urgente||false,archived:o.archived||false,products:JSON.stringify(o.products||[]),faltantes:JSON.stringify(o.faltantes||[]),historial:JSON.stringify(o.historial||[])};
+    supa.upsertOrder(dbOrder);
+    showToast(`Pedido #${fmtNum(o.numero)} creado`);
+  };
   const editOrder=o=>{
     setOrders(p=>p.map(x=>x.id===o.id?o:x));
-    supa.upsertOrder({...o,
+    const dbOrder = {
+      id: o.id,
+      numero: o.numero,
+      cliente: o.cliente||"",
+      equipo: o.equipo||"",
+      contacto: o.contacto||"",
+      fechaCreacion: o.fechaCreacion||"",
+      fechaEntrega: o.fechaEntrega||"",
+      observaciones: o.observaciones||"",
+      observacionesTaller: o.observacionesTaller||"",
+      estado: o.estado||"pendiente",
+      taller: o.taller||"",
+      tallerCustom: o.tallerCustom||"",
+      urgente: o.urgente||false,
+      archived: o.archived||false,
       products: JSON.stringify(o.products||[]),
       faltantes: JSON.stringify(o.faltantes||[]),
       historial: JSON.stringify(o.historial||[]),
-    });
+    };
+    supa.upsertOrder(dbOrder);
     showToast("Pedido actualizado");
   };
   const deleteOrder=id=>{
