@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
 const SUPA_URL = "https://kqkcfeaeoskcykycfgat.supabase.co";
-const SUPA_KEY = "sb_publishable_3MF15HwPagL4zsN9pCmeDQ_hbzQMSJX";
+const SUPA_KEY = "sb_secret_XMyPd5GvkYe7DaMgfoXLlQ_t0WMNrxy";
 
 const supa = {
   async getOrders() {
