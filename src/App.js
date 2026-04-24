@@ -4,43 +4,56 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
 const SUPA_URL = "https://kqkcfeaeoskcykycfgat.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa2NmZWFlb3NrY3lreWNmZ2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MDI2NTQsImV4cCI6MjA5MjQ3ODY1NH0.DXYaWsPslsc4VqpHzZ_DOuJr6OVoAl25aqewBbYM7-Y";
+const SUPA_HEADERS = {"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+
+const toDb = o => ({
+  id:String(o.id), numero:Number(o.numero)||0,
+  cliente:o.cliente||"", equipo:o.equipo||"", contacto:o.contacto||"",
+  fechacreacion:o.fechaCreacion||"", fechaentrega:o.fechaEntrega||"",
+  observaciones:o.observaciones||"", observacionestaller:o.observacionesTaller||"",
+  estado:o.estado||"pendiente", taller:o.taller||"", tallercustom:o.tallerCustom||"",
+  urgente:!!o.urgente, archived:!!o.archived,
+  products:JSON.stringify(o.products||[]),
+  faltantes:JSON.stringify(o.faltantes||[]),
+  historial:JSON.stringify(o.historial||[]),
+});
+
+const fromDb = o => ({...o,
+  fechaCreacion:o.fechacreacion||"", fechaEntrega:o.fechaentrega||"",
+  observacionesTaller:o.observacionestaller||"", tallerCustom:o.tallercustom||"",
+  products:typeof o.products==="string"?JSON.parse(o.products):(o.products||[]),
+  faltantes:typeof o.faltantes==="string"?JSON.parse(o.faltantes):(o.faltantes||[]),
+  historial:typeof o.historial==="string"?JSON.parse(o.historial):(o.historial||[]),
+});
 
 const supa = {
   async getOrders() {
-    const r = await fetch(`${SUPA_URL}/rest/v1/orders?select=*&order=numero.asc`, {
-      headers: {"apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}`}
-    });
-    if (!r.ok) return null;
-    return await r.json();
+    try {
+      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=*&order=numero.asc", {headers:SUPA_HEADERS});
+      if(!r.ok){console.error("supa get",r.status,await r.text());return null;}
+      const data = await r.json();
+      return data.map(fromDb);
+    } catch(e){console.error("supa get ex",e);return null;}
   },
   async upsertOrder(order) {
     try {
-      const r = await fetch(`${SUPA_URL}/rest/v1/orders`, {
-        method: "POST",
-        headers: {
-          "apikey": SUPA_KEY,
-          "Authorization": `Bearer ${SUPA_KEY}`,
-          "Content-Type": "application/json",
-          "Prefer": "resolution=merge-duplicates,return=minimal"
-        },
-        body: JSON.stringify(order)
+      const body = JSON.stringify(toDb(order));
+      const r = await fetch(SUPA_URL+"/rest/v1/orders", {
+        method:"POST",
+        headers:{...SUPA_HEADERS,"Prefer":"resolution=merge-duplicates,return=minimal"},
+        body
       });
-      if (!r.ok) {
-        const err = await r.text();
-        console.error("Supabase upsert error:", err);
-      }
+      if(!r.ok){console.error("supa upsert",r.status,await r.text());}
       return r.ok;
-    } catch(e) {
-      console.error("Supabase upsert exception:", e);
-      return false;
-    }
+    } catch(e){console.error("supa upsert ex",e);return false;}
   },
   async deleteOrder(id) {
-    const r = await fetch(`${SUPA_URL}/rest/v1/orders?id=eq.${id}`, {
-      method: "DELETE",
-      headers: {"apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}`}
-    });
-    return r.ok;
+    try {
+      const r = await fetch(SUPA_URL+"/rest/v1/orders?id=eq."+id, {
+        method:"DELETE", headers:SUPA_HEADERS
+      });
+      return r.ok;
+    } catch(e){return false;}
   }
 };
 
@@ -1959,13 +1972,7 @@ const [orders,setOrders]=useState([]);
   // Load from Supabase on mount - always use Supabase, never demos
   useEffect(()=>{
     supa.getOrders().then(data=>{
-      if(data!==null){
-        setOrders(data.map(o=>({...o,
-          products: typeof o.products === 'string' ? JSON.parse(o.products) : (o.products||[]),
-          faltantes: typeof o.faltantes === 'string' ? JSON.parse(o.faltantes) : (o.faltantes||[]),
-          historial: typeof o.historial === 'string' ? JSON.parse(o.historial) : (o.historial||[]),
-        })));
-      }
+      if(data!==null) setOrders(data);
       setSupaLoaded(true);
     }).catch(()=>setSupaLoaded(true));
   },[]);
@@ -1979,32 +1986,12 @@ const [orders,setOrders]=useState([]);
   const showToast=(msg,color=G.gold)=>{setToast({msg,color});setTimeout(()=>setToast(null),2500);};
   const addOrder=o=>{
     setOrders(p=>[...p,o]);
-    const dbOrder={id:o.id,numero:o.numero,cliente:o.cliente||"",equipo:o.equipo||"",contacto:o.contacto||"",fechaCreacion:o.fechaCreacion||"",fechaEntrega:o.fechaEntrega||"",observaciones:o.observaciones||"",observacionesTaller:o.observacionesTaller||"",estado:o.estado||"pendiente",taller:o.taller||"",tallerCustom:o.tallerCustom||"",urgente:o.urgente||false,archived:o.archived||false,products:JSON.stringify(o.products||[]),faltantes:JSON.stringify(o.faltantes||[]),historial:JSON.stringify(o.historial||[])};
-    supa.upsertOrder(dbOrder);
+    supa.upsertOrder(o);
     showToast(`Pedido #${fmtNum(o.numero)} creado`);
   };
   const editOrder=o=>{
     setOrders(p=>p.map(x=>x.id===o.id?o:x));
-    const dbOrder = {
-      id: o.id,
-      numero: o.numero,
-      cliente: o.cliente||"",
-      equipo: o.equipo||"",
-      contacto: o.contacto||"",
-      fechaCreacion: o.fechaCreacion||"",
-      fechaEntrega: o.fechaEntrega||"",
-      observaciones: o.observaciones||"",
-      observacionesTaller: o.observacionesTaller||"",
-      estado: o.estado||"pendiente",
-      taller: o.taller||"",
-      tallerCustom: o.tallerCustom||"",
-      urgente: o.urgente||false,
-      archived: o.archived||false,
-      products: JSON.stringify(o.products||[]),
-      faltantes: JSON.stringify(o.faltantes||[]),
-      historial: JSON.stringify(o.historial||[]),
-    };
-    supa.upsertOrder(dbOrder);
+    supa.upsertOrder(o);
     showToast("Pedido actualizado");
   };
   const deleteOrder=id=>{
