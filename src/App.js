@@ -772,7 +772,13 @@ function DetailModal({order,onClose,onEdit,onChangeEstado,onUpdateOrder,onArchiv
         {/* Header image */}
         <div style={{height:"155px",position:"relative",background:`linear-gradient(135deg,${gc[0]},${gc[1]})`,overflow:"hidden",flexShrink:0}}>
           {order.products?.[0]?.imagen
-            ?<img src={order.products[0].imagen} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>
+            ?<div style={{position:"relative",width:"100%",height:"100%"}}>
+                <img src={order.products[0].imagen} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>
+                <a href={order.products[0].imagen} target="_blank" rel="noreferrer"
+                  style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",borderRadius:"6px",padding:"4px 10px",fontSize:"10px",fontWeight:"700",textDecoration:"none",fontFamily:"'Syne',sans-serif",cursor:"pointer"}}>
+                  🔍 Ver imagen
+                </a>
+              </div>
             :<><svg style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.05}} viewBox="0 0 640 155">{[0,1,2,3,4,5,6,7].map(i=><line key={i} x1={i*90-20} y1="0" x2={i*90+135} y2="155" stroke="white" strokeWidth="22"/>)}</svg>
               <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 <span style={{fontSize:"10px",fontWeight:"800",textTransform:"uppercase",letterSpacing:"0.2em",color:"rgba(255,255,255,0.12)"}}>{order.products?.map(p=>p.tipo).join(" · ")}</span>
