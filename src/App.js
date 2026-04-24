@@ -117,9 +117,9 @@ const ESTADOS = [
 ];
 
 const PRODUCTOS_TIPOS = ["REMERA","SHORT","MUSCULOSA","CHOMBA","BERMUDA","CAMPERA","CAMPERON","PANTALON","BUZO","ROMPEVIENTOS","PECHERA","SUDADERA","OTRO"];
-const TALLAJES  = ["2","4","6","8","10","12","14","XS","S","M","L","XL","XXL","XXXL"];
+const TALLAJES  = ["2","4","6","8","10","12","14","XS","S","M","L","XL","XXL","XXXL","XXXXL"];
 const TALLERES  = ["Martha","Nelly","Yami","Otros"];
-const TALLEORDER= ["2","4","6","8","10","12","14","XS","S","M","L","XL","XXL","XXXL"];
+const TALLEORDER= ["2","4","6","8","10","12","14","XS","S","M","L","XL","XXL","XXXL","XXXXL"];
 
 const TELAS_OPCIONES = ["Set","Panal","Calado","Deportivo sin friza","Softshell","Red","Taslan","Trucker","Ketten","Otros"];
 
