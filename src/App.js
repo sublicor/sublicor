@@ -71,6 +71,20 @@ const supa = {
         body:JSON.stringify({key:"maxordernum",value:String(num)})
       });
     } catch(e){}
+  },
+  async getNextNum() {
+    try {
+      // Get max numero from orders table directly
+      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=numero&order=numero.desc&limit=1", {headers:SUPA_HEADERS});
+      if(!r.ok) return 1;
+      const data = await r.json();
+      const maxFromOrders = data.length>0 ? (data[0].numero||0) : 0;
+      // Also check config table
+      const r2 = await fetch(SUPA_URL+"/rest/v1/config?key=eq.maxordernum&select=value", {headers:SUPA_HEADERS});
+      const data2 = r2.ok ? await r2.json() : [];
+      const maxFromConfig = data2.length>0 ? parseInt(data2[0].value)||0 : 0;
+      return Math.max(maxFromOrders, maxFromConfig) + 1;
+    } catch(e){return 1;}
   }
 };
 
@@ -998,6 +1012,7 @@ function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false,maxOrd
   const [confirmBulkEntregados,setConfirmBulkEntregados]=useState(false);
   const [editingOrder,setEditingOrder]=useState(null);
   const [showForm,setShowForm]=useState(false);
+  const [nextNumReady,setNextNumReady]=useState(1);
   const [search,setSearch]=useState("");
   const [uploadTarget,setUploadTarget]=useState(null);
   const fileRef=useRef();
@@ -1022,7 +1037,7 @@ function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false,maxOrd
             <span style={{position:"absolute",left:"9px",top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><Ic n="search" s={13} c={G.text3}/></span>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar..." style={{paddingLeft:"28px",fontSize:"12px",padding:"7px 10px 7px 28px",width:"170px"}}/>
           </div>
-          {canEdit(role)&&!showArchived&&<button className="btn bp" onClick={()=>{setEditingOrder(null);setShowForm(true);}}><Ic n="plus" s={15}/>Nuevo pedido</button>}
+          {canEdit(role)&&!showArchived&&<button className="btn bp" onClick={()=>{setEditingOrder(null);supa.getNextNum().then(n=>{setNextNumReady(n);setShowForm(true);});}}><Ic n="plus" s={15}/>Nuevo pedido</button>}
           {[ROLES.DIRECTOR,ROLES.VENDEDOR].includes(role)&&(
             <button className="btn bs" style={{borderColor:G.gold+"44",color:G.gold}} onClick={()=>exportarExcel(orders)}>
               <Ic n="download" s={15}/> Exportar Excel
@@ -1164,7 +1179,7 @@ function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false,maxOrd
       )}
 
       <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f||!uploadTarget)return;const r=new FileReader();r.onload=ev=>handleImgCard(uploadTarget,ev.target.result);r.readAsDataURL(f);e.target.value="";}}/>
-      {(showForm||editingOrder)&&<OrderFormModal order={editingOrder} nextNum={maxOrderNum+1} onSave={handleSave} onClose={()=>{setShowForm(false);setEditingOrder(null);}}/>}
+      {(showForm||editingOrder)&&<OrderFormModal order={editingOrder} nextNum={nextNumReady} onSave={handleSave} onClose={()=>{setShowForm(false);setEditingOrder(null);}}/>}
       {selected&&<DetailModal order={orders.find(o=>o.id===selected.id)||selected} role={role} onClose={()=>setSelected(null)}
         onEdit={o=>{setSelected(null);setEditingOrder(o);setShowForm(true);}}
         onChangeEstado={estado=>{
