@@ -749,6 +749,7 @@ function FaltantesSection({ order, onUpdate, role }) {
 function DetailModal({order,onClose,onEdit,onChangeEstado,onUpdateOrder,onArchive,onUnarchive=()=>{},onDelete=()=>{},role,orders}) {
   const [tab,setTab]=useState("resumen");
   const [confirmDelModal,setConfirmDelModal]=useState(false);
+  const [imgZoom,setImgZoom]=useState(false);
   const estado=getE(order.estado);
   const days=daysUntil(order.fechaEntrega);
   const gc=GRADIENTS[order.products?.[0]?.tipo]||["#0a0a0a","#1f2937"];
@@ -773,11 +774,12 @@ function DetailModal({order,onClose,onEdit,onChangeEstado,onUpdateOrder,onArchiv
         <div style={{height:"155px",position:"relative",background:`linear-gradient(135deg,${gc[0]},${gc[1]})`,overflow:"hidden",flexShrink:0}}>
           {order.products?.[0]?.imagen
             ?<div style={{position:"relative",width:"100%",height:"100%"}}>
-                <img src={order.products[0].imagen} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>
-                <a href={order.products[0].imagen} target="_blank" rel="noreferrer"
-                  style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",borderRadius:"6px",padding:"4px 10px",fontSize:"10px",fontWeight:"700",textDecoration:"none",fontFamily:"'Syne',sans-serif",cursor:"pointer"}}>
-                  🔍 Ver imagen
-                </a>
+                <img src={order.products[0].imagen} style={{width:"100%",height:"100%",objectFit:"cover",cursor:"zoom-in"}} alt="" onClick={()=>setImgZoom(true)}/>
+                <div onClick={()=>setImgZoom(true)} style={{position:"absolute",bottom:"8px",right:"8px",background:"rgba(0,0,0,0.6)",border:"1px solid rgba(255,255,255,0.15)",color:"#fff",borderRadius:"6px",padding:"4px 10px",fontSize:"10px",fontWeight:"700",fontFamily:"'Syne',sans-serif",cursor:"pointer"}}>🔍 Ver</div>
+                {imgZoom&&<div onClick={()=>setImgZoom(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",cursor:"zoom-out"}}>
+                  <img src={order.products[0].imagen} style={{maxWidth:"90vw",maxHeight:"90vh",objectFit:"contain",borderRadius:"10px",boxShadow:"0 0 40px rgba(0,0,0,0.8)"}} alt="" onClick={e=>e.stopPropagation()}/>
+                  <button onClick={()=>setImgZoom(false)} style={{position:"absolute",top:"20px",right:"20px",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",borderRadius:"50%",width:"40px",height:"40px",fontSize:"18px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                </div>}
               </div>
             :<><svg style={{position:"absolute",inset:0,width:"100%",height:"100%",opacity:0.05}} viewBox="0 0 640 155">{[0,1,2,3,4,5,6,7].map(i=><line key={i} x1={i*90-20} y1="0" x2={i*90+135} y2="155" stroke="white" strokeWidth="22"/>)}</svg>
               <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
