@@ -54,6 +54,23 @@ const supa = {
       });
       return r.ok;
     } catch(e){return false;}
+  },
+  async getMaxNum() {
+    try {
+      const r = await fetch(SUPA_URL+"/rest/v1/config?key=eq.maxordernum&select=value", {headers:SUPA_HEADERS});
+      if(!r.ok) return 0;
+      const data = await r.json();
+      return data.length>0 ? parseInt(data[0].value)||0 : 0;
+    } catch(e){return 0;}
+  },
+  async saveMaxNum(num) {
+    try {
+      await fetch(SUPA_URL+"/rest/v1/config", {
+        method:"POST",
+        headers:{...SUPA_HEADERS,"Prefer":"resolution=merge-duplicates,return=minimal"},
+        body:JSON.stringify({key:"maxordernum",value:String(num)})
+      });
+    } catch(e){}
   }
 };
 
@@ -1147,7 +1164,7 @@ function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false}) {
       )}
 
       <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f||!uploadTarget)return;const r=new FileReader();r.onload=ev=>handleImgCard(uploadTarget,ev.target.result);r.readAsDataURL(f);e.target.value="";}}/>
-      {(showForm||editingOrder)&&<OrderFormModal order={editingOrder} nextNum={Math.max(0,...orders.map(o=>o.numero))+1} onSave={handleSave} onClose={()=>{setShowForm(false);setEditingOrder(null);}}/>}
+      {(showForm||editingOrder)&&<OrderFormModal order={editingOrder} nextNum={maxOrderNum+1} onSave={handleSave} onClose={()=>{setShowForm(false);setEditingOrder(null);}}/>}
       {selected&&<DetailModal order={orders.find(o=>o.id===selected.id)||selected} role={role} onClose={()=>setSelected(null)}
         onEdit={o=>{setSelected(null);setEditingOrder(o);setShowForm(true);}}
         onChangeEstado={estado=>{
@@ -1967,12 +1984,19 @@ export default function App() {
 ];
 
 const [orders,setOrders]=useState([]);
+  const [maxOrderNum,setMaxOrderNum]=useState(0);
   const [supaLoaded,setSupaLoaded]=useState(false);
 
   // Load from Supabase on mount - always use Supabase, never demos
   useEffect(()=>{
-    supa.getOrders().then(data=>{
-      if(data!==null) setOrders(data);
+    Promise.all([supa.getOrders(), supa.getMaxNum()]).then(([data, savedMax])=>{
+      if(data!==null){
+        setOrders(data);
+        const ordersMax = data.length>0 ? Math.max(...data.map(o=>o.numero||0)) : 0;
+        setMaxOrderNum(Math.max(ordersMax, savedMax||0));
+      } else {
+        setMaxOrderNum(savedMax||0);
+      }
       setSupaLoaded(true);
     }).catch(()=>setSupaLoaded(true));
   },[]);
@@ -1986,6 +2010,9 @@ const [orders,setOrders]=useState([]);
   const showToast=(msg,color=G.gold)=>{setToast({msg,color});setTimeout(()=>setToast(null),2500);};
   const addOrder=o=>{
     setOrders(p=>[...p,o]);
+    const newMax = Math.max(maxOrderNum, o.numero||0);
+    setMaxOrderNum(newMax);
+    supa.saveMaxNum(newMax);
     supa.upsertOrder(o);
     showToast(`Pedido #${fmtNum(o.numero)} creado`);
   };
