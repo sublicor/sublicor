@@ -987,7 +987,7 @@ function KanbanCard({order,draggingId,onDragStart,onDragEnd,onClick,onUploadClic
 }
 
 // ─── KANBAN VIEW ──────────────────────────────────────────────────────────────
-function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false}) {
+function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false,maxOrderNum=0}) {
   const [draggingId,setDraggingId]=useState(null);
   const [dragOverCol,setDragOverCol]=useState(null);
   const [selected,setSelected]=useState(null);
