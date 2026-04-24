@@ -524,7 +524,7 @@ function OrderFormModal({order,onSave,onClose,nextNum}) {
   const updProd=(id,data)=>setForm(f=>({...f,products:f.products.map(p=>p.id===id?data:p)}));
   const rmProd=id=>setForm(f=>({...f,products:f.products.filter(p=>p.id!==id)}));
   return (
-    <div className="mo" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="mo">
       <div className="md">
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"22px"}}>
           <div>
@@ -758,7 +758,7 @@ function DetailModal({order,onClose,onEdit,onChangeEstado,onUpdateOrder,onArchiv
   const isGold=order.estado==="impresion";
 
   return (
-    <div className="mo" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="mo">
       <div style={{background:G.card,border:`1px solid ${G.border2}`,borderRadius:"18px",width:"100%",maxWidth:"640px",overflow:"hidden",margin:"auto",boxShadow:"0 40px 100px rgba(0,0,0,0.7)"}}>
         {/* Archived banner */}
         {order.archived&&role===ROLES.DIRECTOR&&(
