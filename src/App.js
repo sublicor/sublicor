@@ -256,7 +256,8 @@ const printPDF = order => {
     <img src="${LOGO_B64}" style="width:60px;height:60px;object-fit:contain" alt="SUBLICOR"/>
     <div><div style="font-size:22px;font-weight:900;letter-spacing:0.04em;line-height:1">SUBLICOR</div><div style="font-size:10px;color:#999;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-top:2px">Ficha Técnica de Producción</div></div>
   </div>
-  <div style="text-align:right"><div style="font-size:30px;font-weight:900;font-family:monospace;letter-spacing:-0.02em;line-height:1">#${fmtNum(order.numero)}</div><span style="display:inline-block;margin-top:6px;background:${estado.color};color:#fff;padding:3px 12px;border-radius:4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em">${estado.label}</span></div>
+  <div style="text-align:right"><div style="font-size:30px;font-weight:900;font-family:monospace;letter-spacing:-0.02em;line-height:1">#${fmtNum(order.numero)}</div><span style="display:inline-block;margin-top:6px;background:${estado.color};color:#fff;padding:3px 12px;border-radius:4px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em">${estado.label}</span>${order.urgente?`<span style="display:inline-block;margin-top:6px;margin-left:6px;background:#EF4444;color:#fff;padding:3px 12px;border-radius:4px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em">⚡ URGENTE</span>`:""}
+</div>
 </div>
 <div style="display:grid;grid-template-columns:1fr auto;gap:24px;margin-bottom:18px;align-items:start">
   <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#888;margin-bottom:4px">Cliente</div><div style="font-size:22px;font-weight:800;line-height:1.1">${order.cliente}</div>${order.equipo?`<div style="font-size:13px;color:#555;margin-top:3px">${order.equipo}</div>`:""}</div>
