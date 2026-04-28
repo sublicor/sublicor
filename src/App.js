@@ -204,7 +204,7 @@ const CIERRES = {
 const DEMO_USERS = [
   {id:"1",email:"director@sublicor.com",   password:"Casa1377.",    name:"Director",    role:ROLES.DIRECTOR},
   {id:"2",email:"vendedor@sublicor.com",   password:"vendedor123",  name:"Vendedor",    role:ROLES.VENDEDOR},
-  {id:"6",email:"diseno@sublicor.com",     password:"diseno123",    name:"Diseño",      role:ROLES.DISENO},
+  {id:"6",email:"diseno@sublicor.com",     password:"riverlo+",    name:"Diseño",      role:ROLES.DISENO},
   {id:"3",email:"impresor@sublicor.com",   password:"impresor123",  name:"Impresión",   role:ROLES.IMPRESOR},
   {id:"4",email:"sublimador@sublicor.com", password:"sublimador123",name:"Sublimación", role:ROLES.SUBLIMADOR},
   {id:"5",email:"cortador@sublicor.com",   password:"cortador123",  name:"Corte",       role:ROLES.CORTADOR},
@@ -240,7 +240,8 @@ const printPDF = order => {
     const dist=talleDist(p.players);
     const players=(p.players||[]).filter(j=>j.talle);
     const hasObs=players.some(j=>j.obs);
-    const imgTag=p.imagen?`<img src="${p.imagen}" style="max-width:226px;max-height:226px;min-width:100px;width:auto;height:auto;object-fit:contain;border-radius:6px;margin-bottom:12px;display:block;border:1px solid #eee;background:#f5f5f5" alt=""/>` : "";
+    const imgs=p.imagenes&&p.imagenes.length>0?p.imagenes:(p.imagen?[p.imagen]:[]);
+    const imgTag=imgs.length>0?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${imgs.map(src=>`<img src="${src}" style="max-width:180px;max-height:180px;width:auto;height:auto;object-fit:contain;border-radius:6px;border:1px solid #eee;background:#f5f5f5" alt=""/>`).join("")}</div>`:"";
     const distHTML=dist.length?`<div style="margin-bottom:10px"><p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:5px">Distribución de talles</p><div style="display:flex;gap:5px;flex-wrap:wrap">${dist.map(([t,q])=>`<span style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:4px;padding:3px 8px;font-size:12px"><b>${t}</b> <span style="color:#1d4ed8;font-weight:700">×${q}</span></span>`).join("")}</div></div>`:"";
     const nominaHTML=players.length?`<div><p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:5px">Nómina de jugadores</p><table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e5e7eb"><thead><tr style="background:#f9fafb"><th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:24px">#</th><th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Nombre</th><th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:50px">Núm.</th><th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:50px">Talle</th>${hasObs?`<th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Observaciones</th>`:""}</tr></thead><tbody>${players.map((j,i)=>`<tr style="border-bottom:1px solid #f3f4f6;background:${j.obs?"#fffbeb":"transparent"}"><td style="padding:5px 8px;color:#9ca3af;font-size:11px;font-family:monospace;text-align:center">${i+1}</td><td style="padding:5px 8px">${j.nombre||"—"}</td><td style="padding:5px 8px;text-align:center;font-weight:700;font-family:monospace">${j.numero||"—"}</td><td style="padding:5px 8px;text-align:center"><span style="background:#111;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:800">${j.talle}</span></td>${hasObs?`<td style="padding:5px 8px">${j.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:2px 6px;font-size:11px;color:#92400e;font-weight:600">⚠ ${j.obs}</span>`:""}</td>`:""}</tr>`).join("")}</tbody></table></div>`:"";
     return `<div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:16px;page-break-inside:avoid"><div style="background:#111;color:#fff;padding:9px 16px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:800;font-size:13px;letter-spacing:0.06em">${p.tipo}</span>${p.cantidad?`<span style="font-size:12px;opacity:0.55">× ${p.cantidad} unidades</span>`:""}</div><div style="padding:14px 16px"><div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px">${imgTag}${cfg.length?`<table style="flex:1;border-collapse:collapse;font-size:12px;margin-bottom:${dist.length||players.length?12:0}px"><tbody>${cfg.map(([k,v])=>`<tr style="border-bottom:1px solid #f5f5f5"><td style="padding:4px 10px 4px 0;color:#666;width:150px">${FIELD_LABELS[k]||k}</td><td style="padding:4px 0;font-weight:600">${v}</td></tr>`).join("")}${p.config?.observaciones?`<tr><td style="padding:4px 10px 4px 0;color:#666">Observaciones</td><td style="padding:4px 0;font-size:12px">${p.config.observaciones}</td></tr>`:""}</tbody></table>`:""}</div> ${distHTML}${nominaHTML}</div></div>`;
@@ -435,7 +436,25 @@ function ProductForm({product,onChange,onRemove,readOnly=false}) {
   const [open,setOpen]=useState(true);
   const fields=PRODUCT_FIELDS[product.tipo]||[];
   const upd=(k,v)=>onChange({...product,config:{...product.config,[k]:v}});
-  const handleImg=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>onChange({...product,imagen:ev.target.result});r.readAsDataURL(f);e.target.value="";};
+  const handleImg=e=>{
+    const files=Array.from(e.target.files);
+    if(!files.length)return;
+    const imgs=product.imagenes||[];
+    const remaining=4-imgs.length;
+    const toLoad=files.slice(0,remaining);
+    let loaded=[];
+    toLoad.forEach((f,i)=>{
+      const r=new FileReader();
+      r.onload=ev=>{
+        loaded.push(ev.target.result);
+        if(loaded.length===toLoad.length){
+          onChange({...product,imagenes:[...imgs,...loaded],imagen:[...imgs,...loaded][0]});
+        }
+      };
+      r.readAsDataURL(f);
+    });
+    e.target.value="";
+  };
   return (
     <div className="pcard">
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:open?"12px":"0"}}>
@@ -464,10 +483,17 @@ function ProductForm({product,onChange,onRemove,readOnly=false}) {
         <div>
           {!readOnly&&(
             <div style={{marginBottom:"12px"}}>
-              {product.imagen
-                ?<div style={{position:"relative",borderRadius:"8px",overflow:"hidden",marginBottom:"8px"}}><img src={product.imagen} style={{width:"100%",height:"120px",objectFit:"cover",display:"block"}} alt=""/><button className="btn bd" style={{position:"absolute",top:"8px",right:"8px",padding:"4px 8px",fontSize:"11px"}} onClick={()=>onChange({...product,imagen:null})}>Quitar</button></div>
-                :<label style={{cursor:"pointer",display:"block"}}><input type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/><div style={{display:"flex",alignItems:"center",gap:"7px",background:G.bg,border:`1.5px dashed ${G.border}`,borderRadius:"8px",padding:"8px 12px",color:G.text3,fontSize:"12px",fontWeight:"700",transition:"all 0.15s"}} onMouseOver={e=>{e.currentTarget.style.borderColor=G.gold;e.currentTarget.style.color=G.gold;}} onMouseOut={e=>{e.currentTarget.style.borderColor=G.border;e.currentTarget.style.color=G.text3;}}><Ic n="upload" s={14}/> Subir imagen del producto</div></label>
-              }
+              {(()=>{const imgs=product.imagenes&&product.imagenes.length>0?product.imagenes:(product.imagen?[product.imagen]:[]);return(<>
+                {imgs.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"6px",marginBottom:"8px"}}>
+                  {imgs.map((src,i)=>(
+                    <div key={i} style={{position:"relative",borderRadius:"8px",overflow:"hidden"}}>
+                      <img src={src} style={{width:"100%",height:"90px",objectFit:"cover",display:"block"}} alt=""/>
+                      <button className="btn bd" style={{position:"absolute",top:"4px",right:"4px",padding:"2px 7px",fontSize:"10px"}} onClick={()=>{const newImgs=imgs.filter((_,j)=>j!==i);onChange({...product,imagenes:newImgs,imagen:newImgs[0]||null});}}>✕</button>
+                    </div>
+                  ))}
+                </div>}
+                {imgs.length<4&&<label style={{cursor:"pointer",display:"block"}}><input type="file" accept="image/*" multiple style={{display:"none"}} onChange={handleImg}/><div style={{display:"flex",alignItems:"center",gap:"7px",background:G.bg,border:`1.5px dashed ${G.border}`,borderRadius:"8px",padding:"8px 12px",color:G.text3,fontSize:"12px",fontWeight:"700",transition:"all 0.15s"}} onMouseOver={e=>{e.currentTarget.style.borderColor=G.gold;e.currentTarget.style.color=G.gold;}} onMouseOut={e=>{e.currentTarget.style.borderColor=G.border;e.currentTarget.style.color=G.text3;}}><Ic n="upload" s={14}/> {imgs.length===0?"Subir imágenes (máx. 4)":`Agregar más (${imgs.length}/4)`}</div></label>}
+                </>);})()}
             </div>
           )}
           <div className="g2">
