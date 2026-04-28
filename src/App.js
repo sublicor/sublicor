@@ -104,10 +104,11 @@ const G = {
 };
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const ROLES = { VENDEDOR:"vendedor", IMPRESOR:"impresor", SUBLIMADOR:"sublimador", CORTADOR:"cortador", DIRECTOR:"director" };
+const ROLES = { VENDEDOR:"vendedor", DISENO:"diseno", IMPRESOR:"impresor", SUBLIMADOR:"sublimador", CORTADOR:"cortador", DIRECTOR:"director" };
 
 const ESTADOS = [
   { id:"pendiente",  label:"Pendiente",  color:"#6B7280", bg:"rgba(107,114,128,0.1)" },
+  { id:"diseno",     label:"Diseño",     color:"#8B5CF6", bg:"rgba(139,92,246,0.1)"  },
   { id:"impresion",  label:"Impresión",  color:G.gold,    bg:G.goldBg2 },
   { id:"sublimado",  label:"Sublimado",  color:"#A78BFA", bg:"rgba(167,139,250,0.1)" },
   { id:"corte",      label:"Corte",      color:"#38BDF8", bg:"rgba(56,189,248,0.1)"  },
@@ -203,6 +204,7 @@ const CIERRES = {
 const DEMO_USERS = [
   {id:"1",email:"director@sublicor.com",   password:"Casa1377.",    name:"Director",    role:ROLES.DIRECTOR},
   {id:"2",email:"vendedor@sublicor.com",   password:"vendedor123",  name:"Vendedor",    role:ROLES.VENDEDOR},
+  {id:"6",email:"diseno@sublicor.com",     password:"diseno123",    name:"Diseño",      role:ROLES.DISENO},
   {id:"3",email:"impresor@sublicor.com",   password:"impresor123",  name:"Impresión",   role:ROLES.IMPRESOR},
   {id:"4",email:"sublimador@sublicor.com", password:"sublimador123",name:"Sublimación", role:ROLES.SUBLIMADOR},
   {id:"5",email:"cortador@sublicor.com",   password:"cortador123",  name:"Corte",       role:ROLES.CORTADOR},
