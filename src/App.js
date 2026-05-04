@@ -240,17 +240,46 @@ const talleDist= players => {
 const printPDF = order => {
   const w = window.open("","_blank"); if(!w) return;
   const estado = getE(order.estado);
-  const productsHTML = (order.products||[]).map(p=>{
+  const prods = (order.products||[]);
+  // Products summary section
+  const productsHTML = prods.map(p=>{
     const cfg=Object.entries(p.config||{}).filter(([k,v])=>v&&k!=="observaciones");
     const dist=talleDist(p.players);
-    const players=(p.players||[]).filter(j=>j.talle);
-    const hasObs=players.some(j=>j.obs);
     const imgs=p.imagenes&&p.imagenes.length>0?p.imagenes:(p.imagen?[p.imagen]:[]);
     const imgTag=imgs.length>0?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${imgs.map(src=>`<img src="${src}" style="max-width:180px;max-height:180px;width:auto;height:auto;object-fit:contain;border-radius:6px;border:1px solid #eee;background:#f5f5f5" alt=""/>`).join("")}</div>`:"";
-    const distHTML=dist.length?`<div style="margin-bottom:10px"><p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:5px">Distribución de talles</p><div style="display:flex;gap:5px;flex-wrap:wrap">${dist.map(([t,q])=>`<span style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:4px;padding:3px 8px;font-size:12px"><b>${t}</b> <span style="color:#1d4ed8;font-weight:700">×${q}</span></span>`).join("")}</div></div>`:"";
-    const nominaHTML=players.length?`<div><p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:5px">Nómina de jugadores</p><table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e5e7eb"><thead><tr style="background:#f9fafb"><th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:24px">#</th><th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Nombre</th><th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:50px">Núm.</th><th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:50px">Talle</th>${hasObs?`<th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Observaciones</th>`:""}</tr></thead><tbody>${players.map((j,i)=>`<tr style="border-bottom:1px solid #f3f4f6;background:${j.obs?"#fffbeb":"transparent"}"><td style="padding:5px 8px;color:#9ca3af;font-size:11px;font-family:monospace;text-align:center">${i+1}</td><td style="padding:5px 8px">${j.nombre||"—"}</td><td style="padding:5px 8px;text-align:center;font-weight:700;font-family:monospace">${j.numero||"—"}</td><td style="padding:5px 8px;text-align:center"><span style="background:#111;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:800">${j.talle}</span></td>${hasObs?`<td style="padding:5px 8px">${j.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:2px 6px;font-size:11px;color:#92400e;font-weight:600">⚠ ${j.obs}</span>`:""}</td>`:""}</tr>`).join("")}</tbody></table></div>`:"";
-    return `<div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:16px;page-break-inside:avoid"><div style="background:#111;color:#fff;padding:9px 16px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:800;font-size:13px;letter-spacing:0.06em">${p.tipo}</span>${p.cantidad?`<span style="font-size:12px;opacity:0.55">× ${p.cantidad} unidades</span>`:""}</div><div style="padding:14px 16px"><div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:12px">${imgTag}${cfg.length?`<table style="flex:1;border-collapse:collapse;font-size:12px;margin-bottom:${dist.length||players.length?12:0}px"><tbody>${cfg.map(([k,v])=>`<tr style="border-bottom:1px solid #f5f5f5"><td style="padding:4px 10px 4px 0;color:#666;width:150px">${FIELD_LABELS[k]||k}</td><td style="padding:4px 0;font-weight:600">${v}</td></tr>`).join("")}${p.config?.observaciones?`<tr><td style="padding:4px 10px 4px 0;color:#666">Observaciones</td><td style="padding:4px 0;font-size:12px">${p.config.observaciones}</td></tr>`:""}</tbody></table>`:""}</div> ${distHTML}${nominaHTML}</div></div>`;
+    const distHTML=dist.length?`<div style="margin-bottom:8px"><p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:4px">Distribución de talles</p><div style="display:flex;gap:5px;flex-wrap:wrap">${dist.map(([t,q])=>`<span style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:4px;padding:3px 8px;font-size:12px"><b>${t}</b> <span style="color:#1d4ed8;font-weight:700">×${q}</span></span>`).join("")}</div></div>`:"";
+    return `<div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:12px;page-break-inside:avoid"><div style="background:#111;color:#fff;padding:9px 16px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:800;font-size:13px;letter-spacing:0.06em">${p.tipo}</span>${p.cantidad?`<span style="font-size:12px;opacity:0.55">× ${p.cantidad} unidades</span>`:""}</div><div style="padding:12px 16px"><div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:8px">${imgTag}${cfg.length?`<table style="flex:1;border-collapse:collapse;font-size:12px"><tbody>${cfg.map(([k,v])=>`<tr style="border-bottom:1px solid #f5f5f5"><td style="padding:3px 10px 3px 0;color:#666;width:150px">${FIELD_LABELS[k]||k}</td><td style="padding:3px 0;font-weight:600">${v}</td></tr>`).join("")}${p.config?.observaciones?`<tr><td style="padding:3px 10px 3px 0;color:#666">Observaciones</td><td style="padding:3px 0;font-size:12px">${p.config.observaciones}</td></tr>`:""}</tbody></table>`:""}</div>${distHTML}</div></div>`;
   }).join("");
+
+  // Unified nomina - all players from all products with a column per product
+  const prodsConNomina = prods.filter(p=>(p.players||[]).some(j=>j.talle));
+  const allPlayers = prodsConNomina.length>0 ? (prodsConNomina[0].players||[]).filter(j=>j.talle) : [];
+  const hasObs = allPlayers.some(j=>j.obs);
+  const nominaUnificadaHTML = allPlayers.length>0 ? `<div style="margin-top:4px;page-break-inside:avoid">
+    <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:5px">Nómina de jugadores</p>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e5e7eb">
+      <thead><tr style="background:#f9fafb">
+        <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:24px">#</th>
+        <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Nombre</th>
+        <th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:46px">Núm.</th>
+        ${prodsConNomina.map(p=>`<th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:60px">${p.tipo}</th>`).join("")}
+        ${hasObs?`<th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Obs.</th>`:""}
+      </tr></thead>
+      <tbody>${allPlayers.map((j,i)=>{
+        const talles = prodsConNomina.map(p=>{
+          const pj=(p.players||[]).find((_,pi)=>pi===i);
+          return pj?`<span style="background:#111;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:800">${pj.talle}</span>`:`<span style="color:#ccc">—</span>`;
+        });
+        return `<tr style="border-bottom:1px solid #f3f4f6;background:${j.obs?"#fffbeb":"transparent"}">
+          <td style="padding:5px 8px;color:#9ca3af;font-size:11px;font-family:monospace;text-align:center">${i+1}</td>
+          <td style="padding:5px 8px">${j.nombre||"—"}</td>
+          <td style="padding:5px 8px;text-align:center;font-weight:700;font-family:monospace">${j.numero||"—"}</td>
+          ${talles.map(t=>`<td style="padding:5px 8px;text-align:center">${t}</td>`).join("")}
+          ${hasObs?`<td style="padding:5px 8px">${j.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:2px 6px;font-size:11px;color:#92400e;font-weight:600">⚠ ${j.obs}</span>`:""}</td>`:""}
+        </tr>`;
+      }).join("")}</tbody>
+    </table>
+  </div>` : "";;
 
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ficha #${fmtNum(order.numero)} — ${order.cliente}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:32px;max-width:860px;margin:0 auto;line-height:1.5;}@media print{body{padding:12px;}.no-print{display:none!important;}@page{margin:1.2cm;size:A4;}}</style>
@@ -275,6 +304,7 @@ ${order.observaciones?`<div style="padding:10px 14px;border-left:3px solid #b453
 ${order.observacionesTaller?`<div style="padding:10px 14px;border-left:3px solid #0369a1;background:#f0f9ff;border-radius:0 6px 6px 0;margin-bottom:10px"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#0369a1;margin-bottom:3px">Instrucciones para el taller</div><div style="font-size:12px;color:#444">${order.observacionesTaller}</div></div>`:""}
 <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#888;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:16px;margin-top:14px">Productos (${order.products?.length||0})</div>
 ${productsHTML}
+${nominaUnificadaHTML}
 <div style="margin-top:24px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#9ca3af">
   <div style="display:flex;align-items:center;gap:8px"><img src="${LOGO_B64}" style="width:20px;height:20px;object-fit:contain;opacity:0.3" alt=""/><span>SUBLICOR PRO APP</span></div>
   <span>Generado: ${new Date().toLocaleString("es-AR")}</span>
