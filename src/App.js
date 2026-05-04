@@ -2076,16 +2076,19 @@ const [orders,setOrders]=useState([]);
 
   // Load from Supabase on mount - always use Supabase, never demos
   useEffect(()=>{
-    Promise.all([supa.getOrders(), supa.getMaxNum()]).then(([data, savedMax])=>{
-      if(data!==null){
-        setOrders(data);
-        const ordersMax = data.length>0 ? Math.max(...data.map(o=>o.numero||0)) : 0;
-        setMaxOrderNum(Math.max(ordersMax, savedMax||0));
-      } else {
-        setMaxOrderNum(savedMax||0);
-      }
-      setSupaLoaded(true);
-    }).catch(()=>setSupaLoaded(true));
+    const loadOrders = () => {
+      supa.getOrders().then(data=>{
+        if(data!==null) setOrders(data);
+        setSupaLoaded(true);
+      }).catch(()=>setSupaLoaded(true));
+    };
+    // Load max num once on mount
+    supa.getMaxNum().then(savedMax=>setMaxOrderNum(prev=>Math.max(prev,savedMax||0)));
+    // Load orders immediately
+    loadOrders();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadOrders, 30000);
+    return ()=>clearInterval(interval);
   },[]);
   const [view,setView]=useState("dashboard");
   const [toast,setToast]=useState(null);
