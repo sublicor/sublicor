@@ -74,17 +74,22 @@ const supa = {
   },
   async getNextNum() {
     try {
-      // Get max numero from orders table directly
-      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=numero&order=numero.desc&limit=1", {headers:SUPA_HEADERS});
-      if(!r.ok) return 1;
-      const data = await r.json();
-      const maxFromOrders = data.length>0 ? (data[0].numero||0) : 0;
-      // Also check config table
-      const r2 = await fetch(SUPA_URL+"/rest/v1/config?key=eq.maxordernum&select=value", {headers:SUPA_HEADERS});
-      const data2 = r2.ok ? await r2.json() : [];
-      const maxFromConfig = data2.length>0 ? parseInt(data2[0].value)||0 : 0;
-      return Math.max(maxFromOrders, maxFromConfig) + 1;
-    } catch(e){return 1;}
+      const r = await fetch(SUPA_URL+"/rest/v1/rpc/next_order_numero", {
+        method:"POST",
+        headers:SUPA_HEADERS,
+        body:"{}"
+      });
+      if(!r.ok) throw new Error();
+      const num = await r.json();
+      return num||1;
+    } catch(e){
+      // Fallback: max from orders
+      try {
+        const r2 = await fetch(SUPA_URL+"/rest/v1/orders?select=numero&order=numero.desc&limit=1", {headers:SUPA_HEADERS});
+        const data = await r2.json();
+        return (data.length>0 ? (data[0].numero||0) : 0) + 1;
+      } catch(e2){return 1;}
+    }
   }
 };
 
