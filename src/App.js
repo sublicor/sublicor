@@ -253,8 +253,10 @@ const printPDF = order => {
 
   // Unified nomina with Talle+Num columns per product, separated by thick borders
   const prodsConNomina = prods.filter(p=>(p.players||[]).some(j=>j.talle));
-  // Build master player list from all products (union by index)
-  const maxPlayers = prodsConNomina.length>0 ? Math.max(...prodsConNomina.map(p=>(p.players||[]).filter(j=>j.talle).length)) : 0;
+  // Total rows = max position across ALL products (not sum, but max index)
+  // Each product places its players at absolute positions 0..n-1
+  // We need to find the highest position used across all products
+  const maxPlayers = prodsConNomina.length>0 ? Math.max(...prodsConNomina.map(p=>(p.players||[]).length)) : 0;
   const hasObs = prodsConNomina.some(p=>(p.players||[]).some(j=>j.obs));
 
   const nominaUnificadaHTML = prodsConNomina.length>0 && maxPlayers>0 ? `
@@ -277,13 +279,13 @@ const printPDF = order => {
       <tbody>
         ${Array.from({length:maxPlayers},(_,i)=>{
           // Get player name from first product that has this index
-          const refProd = prodsConNomina.find(p=>(p.players||[]).filter(j=>j.talle)[i]);
-          const refPlayer = refProd ? (refProd.players||[]).filter(j=>j.talle)[i] : null;
-          const nombre = refPlayer?.nombre || "—";
+          const refProd = prodsConNomina.find(p=>(p.players||[])[i]?.talle);
+          const refPlayer = refProd ? (refProd.players||[])[i] : null;
+          const nombre = refPlayer?.nombre || `Pos. ${i+1}`;
           const rowBg = i%2===0?"transparent":"#f9fafb";
           const cols = prodsConNomina.map((p,pi)=>{
-            const players=(p.players||[]).filter(j=>j.talle);
-            const pj=players[i];
+            const players=(p.players||[]);
+            const pj=players[i] && players[i].talle ? players[i] : null;
             const talle=pj?`<span style="background:#111;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:800">${pj.talle}</span>`:`<span style="color:#ccc">—</span>`;
             const num=pj?(pj.numero||"—"):"—";
             return `<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${num}</td>`;
