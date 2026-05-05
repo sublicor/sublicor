@@ -251,33 +251,50 @@ const printPDF = order => {
     return `<div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:12px;page-break-inside:avoid"><div style="background:#111;color:#fff;padding:9px 16px;display:flex;align-items:center;justify-content:space-between"><span style="font-weight:800;font-size:13px;letter-spacing:0.06em">${p.tipo}</span>${p.cantidad?`<span style="font-size:12px;opacity:0.55">× ${p.cantidad} unidades</span>`:""}</div><div style="padding:12px 16px"><div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:8px">${imgTag}${cfg.length?`<table style="flex:1;border-collapse:collapse;font-size:12px"><tbody>${cfg.map(([k,v])=>`<tr style="border-bottom:1px solid #f5f5f5"><td style="padding:3px 10px 3px 0;color:#666;width:150px">${FIELD_LABELS[k]||k}</td><td style="padding:3px 0;font-weight:600">${v}</td></tr>`).join("")}${p.config?.observaciones?`<tr><td style="padding:3px 10px 3px 0;color:#666">Observaciones</td><td style="padding:3px 0;font-size:12px">${p.config.observaciones}</td></tr>`:""}</tbody></table>`:""}</div>${distHTML}</div></div>`;
   }).join("");
 
-  // Unified nomina - all players from all products with a column per product
+  // Unified nomina with Talle+Num columns per product, separated by thick borders
   const prodsConNomina = prods.filter(p=>(p.players||[]).some(j=>j.talle));
-  const allPlayers = prodsConNomina.length>0 ? (prodsConNomina[0].players||[]).filter(j=>j.talle) : [];
-  const hasObs = allPlayers.some(j=>j.obs);
-  const nominaUnificadaHTML = allPlayers.length>0 ? `<div style="margin-top:4px;page-break-inside:avoid">
-    <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:5px">Nómina de jugadores</p>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e5e7eb">
-      <thead><tr style="background:#f9fafb">
-        <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:24px">#</th>
-        <th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Nombre</th>
-        <th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:46px">Núm.</th>
-        ${prodsConNomina.map(p=>`<th style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb;width:60px">${p.tipo}</th>`).join("")}
-        ${hasObs?`<th style="padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb">Obs.</th>`:""}
-      </tr></thead>
-      <tbody>${allPlayers.map((j,i)=>{
-        const talles = prodsConNomina.map(p=>{
-          const pj=(p.players||[]).find((_,pi)=>pi===i);
-          return pj?`<span style="background:#111;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:800">${pj.talle}</span>`:`<span style="color:#ccc">—</span>`;
-        });
-        return `<tr style="border-bottom:1px solid #f3f4f6;background:${j.obs?"#fffbeb":"transparent"}">
-          <td style="padding:5px 8px;color:#9ca3af;font-size:11px;font-family:monospace;text-align:center">${i+1}</td>
-          <td style="padding:5px 8px">${j.nombre||"—"}</td>
-          <td style="padding:5px 8px;text-align:center;font-weight:700;font-family:monospace">${j.numero||"—"}</td>
-          ${talles.map(t=>`<td style="padding:5px 8px;text-align:center">${t}</td>`).join("")}
-          ${hasObs?`<td style="padding:5px 8px">${j.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:4px;padding:2px 6px;font-size:11px;color:#92400e;font-weight:600">⚠ ${j.obs}</span>`:""}</td>`:""}
-        </tr>`;
-      }).join("")}</tbody>
+  // Build master player list from all products (union by index)
+  const maxPlayers = prodsConNomina.length>0 ? Math.max(...prodsConNomina.map(p=>(p.players||[]).filter(j=>j.talle).length)) : 0;
+  const hasObs = prodsConNomina.some(p=>(p.players||[]).some(j=>j.obs));
+
+  const nominaUnificadaHTML = prodsConNomina.length>0 && maxPlayers>0 ? `
+  <div style="margin-top:12px;page-break-inside:avoid">
+    <p style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:#888;margin-bottom:6px">Nómina de jugadores</p>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #d1d5db">
+      <thead>
+        <tr style="background:#f3f4f6">
+          <th rowspan="2" style="padding:5px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db;border-right:2px solid #6b7280">Nombre</th>
+          ${prodsConNomina.map((p,pi)=>`<th colspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#111;border:1px solid #d1d5db;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${p.tipo}</th>`).join("")}
+          ${hasObs?`<th rowspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db">Obs.</th>`:""}
+        </tr>
+        <tr style="background:#f9fafb">
+          ${prodsConNomina.map((p,pi)=>`
+            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb">Talle</th>
+            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">Núm.</th>
+          `).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${Array.from({length:maxPlayers},(_,i)=>{
+          // Get player name from first product that has this index
+          const refProd = prodsConNomina.find(p=>(p.players||[]).filter(j=>j.talle)[i]);
+          const refPlayer = refProd ? (refProd.players||[]).filter(j=>j.talle)[i] : null;
+          const nombre = refPlayer?.nombre || "—";
+          const rowBg = i%2===0?"transparent":"#f9fafb";
+          const cols = prodsConNomina.map((p,pi)=>{
+            const players=(p.players||[]).filter(j=>j.talle);
+            const pj=players[i];
+            const talle=pj?`<span style="background:#111;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:800">${pj.talle}</span>`:`<span style="color:#ccc">—</span>`;
+            const num=pj?(pj.numero||"—"):"—";
+            return `<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${num}</td>`;
+          }).join("");
+          const obsCell = hasObs ? `<td style="padding:4px 8px;border:1px solid #e5e7eb">${refPlayer?.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:3px;padding:1px 5px;font-size:10px;color:#92400e">⚠ ${refPlayer.obs}</span>`:""}</td>` : "";
+          return `<tr style="background:${rowBg};border-bottom:1px solid #e5e7eb">
+            <td style="padding:5px 10px;border:1px solid #e5e7eb;border-right:2px solid #6b7280;font-weight:500">${nombre}</td>
+            ${cols}${obsCell}
+          </tr>`;
+        }).join("")}
+      </tbody>
     </table>
   </div>` : "";;
 
