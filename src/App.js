@@ -2104,16 +2104,10 @@ const [orders,setOrders]=useState([]);
   useEffect(()=>{
     const loadOrders = () => {
       supa.getOrders().then(data=>{
-        if(data!==null){
-          setOrders(data);
-          setSupaLoaded(true);
-        } else {
-          // Keep retrying every 3 seconds until data loads
-          setTimeout(loadOrders, 3000);
-        }
+        if(data!==null) setOrders(data);
+        setSupaLoaded(true);
       }).catch(()=>{
-        // Keep retrying every 3 seconds on error
-        setTimeout(loadOrders, 3000);
+        setSupaLoaded(true);
       });
     };
     // Load max num once on mount
