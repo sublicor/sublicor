@@ -265,15 +265,20 @@ const printPDF = order => {
     <table style="width:100%;border-collapse:collapse;font-size:11px;border:1px solid #d1d5db">
       <thead>
         <tr style="background:#f3f4f6">
-          <th rowspan="2" style="padding:5px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db;border-right:2px solid #6b7280">Nombre</th>
-          ${prodsConNomina.map((p,pi)=>`<th colspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#111;border:1px solid #d1d5db;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${p.tipo}</th>`).join("")}
+          <th rowspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db;border-right:2px solid #6b7280;width:30px">#</th>
+          ${prodsConNomina.map((p,pi)=>{
+            const hasNombre=(p.players||[]).some(j=>j.nombre);
+            return `<th colspan="${hasNombre?3:2}" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#111;border:1px solid #d1d5db;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${p.tipo}</th>`;
+          }).join("")}
           ${hasObs?`<th rowspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db">Obs.</th>`:""}
         </tr>
         <tr style="background:#f9fafb">
-          ${prodsConNomina.map((p,pi)=>`
+          ${prodsConNomina.map((p,pi)=>{
+            const hasNombre=(p.players||[]).some(j=>j.nombre);
+            return `${hasNombre?`<th style="padding:4px 6px;text-align:left;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb">Nombre</th>`:""}
             <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb">Talle</th>
-            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">Núm.</th>
-          `).join("")}
+            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">Núm.</th>`;
+          }).join("")}
         </tr>
       </thead>
       <tbody>
@@ -286,13 +291,15 @@ const printPDF = order => {
           const cols = prodsConNomina.map((p,pi)=>{
             const players=(p.players||[]);
             const pj=players[i] && players[i].talle ? players[i] : null;
+            const hasNombre=(p.players||[]).some(j=>j.nombre);
             const talle=pj?`<span style="background:#111;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:800">${pj.talle}</span>`:`<span style="color:#ccc">—</span>`;
             const num=pj?(pj.numero||"—"):"—";
-            return `<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${num}</td>`;
+            const nombreCell=hasNombre?`<td style="padding:4px 6px;border:1px solid #e5e7eb">${pj?.nombre||"—"}</td>`:"";
+            return `${nombreCell}<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${num}</td>`;
           }).join("");
           const obsCell = hasObs ? `<td style="padding:4px 8px;border:1px solid #e5e7eb">${refPlayer?.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:3px;padding:1px 5px;font-size:10px;color:#92400e">⚠ ${refPlayer.obs}</span>`:""}</td>` : "";
           return `<tr style="background:${rowBg};border-bottom:1px solid #e5e7eb">
-            <td style="padding:5px 10px;border:1px solid #e5e7eb;border-right:2px solid #6b7280;font-weight:500">${nombre}</td>
+            <td style="padding:5px 8px;text-align:center;border:1px solid #e5e7eb;border-right:2px solid #6b7280;color:#9ca3af;font-family:monospace">${i+1}</td>
             ${cols}${obsCell}
           </tr>`;
         }).join("")}
