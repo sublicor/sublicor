@@ -357,7 +357,7 @@ const Styles = () => (
     select option{background:${G.card};color:${G.text};}
     textarea{resize:vertical;min-height:66px;}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;border-radius:8px;transition:all 0.15s;white-space:nowrap;user-select:none;font-size:13px;}
-    .btn:active{transform:scale(0.97);}
+    .btn:active{transform:scale(0.97);}@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
     .bp{background:linear-gradient(135deg,${G.goldDim},${G.gold});color:#111;padding:10px 18px;box-shadow:0 4px 14px ${G.gold}33;}.bp:hover{filter:brightness(1.08);}
     .bs{background:${G.card};color:${G.text2};border:1px solid ${G.border};padding:9px 16px;}.bs:hover{border-color:${G.gold};color:${G.gold};}
     .bg{background:transparent;color:${G.text3};padding:7px 10px;}.bg:hover{color:${G.text};background:${G.card};}
@@ -2097,9 +2097,17 @@ const [orders,setOrders]=useState([]);
   useEffect(()=>{
     const loadOrders = () => {
       supa.getOrders().then(data=>{
-        if(data!==null) setOrders(data);
-        setSupaLoaded(true);
-      }).catch(()=>setSupaLoaded(true));
+        if(data!==null){
+          setOrders(data);
+          setSupaLoaded(true);
+        } else {
+          // Keep retrying every 3 seconds until data loads
+          setTimeout(loadOrders, 3000);
+        }
+      }).catch(()=>{
+        // Keep retrying every 3 seconds on error
+        setTimeout(loadOrders, 3000);
+      });
     };
     // Load max num once on mount
     supa.getMaxNum().then(savedMax=>setMaxOrderNum(prev=>Math.max(prev,savedMax||0)));
@@ -2217,7 +2225,13 @@ const [orders,setOrders]=useState([]);
           </div>
           <div style={{flex:1,padding:"20px 22px",overflow:"auto",paddingBottom:"72px",background:G.bg}}>
             {view==="dashboard"&&<Dashboard orders={orders}/>}
-            {view==="kanban"&&<KanbanView orders={orders} onAdd={addOrder} onEdit={editOrder} onDelete={deleteOrder} role={user.role}/>}
+            {view==="kanban"&&(!supaLoaded
+              ?<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:"16px"}}>
+                  <div style={{width:"40px",height:"40px",border:`3px solid ${G.border}`,borderTop:`3px solid ${G.gold}`,borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
+                  <p style={{color:G.text3,fontSize:"13px"}}>Cargando pedidos...</p>
+                </div>
+              :<KanbanView orders={orders} onAdd={addOrder} onEdit={editOrder} onDelete={deleteOrder} role={user.role} maxOrderNum={maxOrderNum}/>
+            )}
 
             {view==="compras"&&user.role===ROLES.DIRECTOR&&<ComprasView orders={orders}/>}
             {view==="talleres"&&user.role===ROLES.DIRECTOR&&<TalleresView orders={orders}/>}
