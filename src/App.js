@@ -2115,7 +2115,7 @@ const [orders,setOrders]=useState([]);
     // Load orders immediately
     loadOrders();
     // Auto-refresh every 30 seconds
-    const interval = setInterval(loadOrders, 30000);
+    const interval = setInterval(loadOrders, 120000);
     return ()=>clearInterval(interval);
   },[]);
   const [view,setView]=useState("dashboard");
