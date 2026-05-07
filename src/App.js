@@ -281,7 +281,7 @@ const printPDF = order => {
           // Get player name from first product that has this index
           const refProd = prodsConNomina.find(p=>(p.players||[])[i]?.talle);
           const refPlayer = refProd ? (refProd.players||[])[i] : null;
-          const nombre = refPlayer?.nombre || `Pos. ${i+1}`;
+          const nombre = refPlayer?.nombre || '—';
           const rowBg = i%2===0?"transparent":"#f9fafb";
           const cols = prodsConNomina.map((p,pi)=>{
             const players=(p.players||[]);
