@@ -311,7 +311,7 @@ const printPDF = order => {
   </div>` : "";;
 
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ficha #${fmtNum(order.numero)} — ${order.cliente}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:32px;max-width:860px;margin:0 auto;line-height:1.5;}@media print{body{padding:12px;}.no-print{display:none!important;}@page{margin:1.2cm;size:A4;}}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:32px;max-width:860px;margin:0 auto;line-height:1.5;}@media print{body{padding:4px;max-width:100%;}.no-print{display:none!important;}@page{margin:1cm;size:A4;}table{width:100%!important;}}</style>
 </head><body>
 <div class="no-print" style="margin-bottom:20px;display:flex;gap:10px;align-items:center">
   <button onclick="window.print()" style="background:#111;color:#fff;padding:10px 22px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700">🖨️ Imprimir / Guardar PDF</button>
