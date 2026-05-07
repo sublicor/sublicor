@@ -257,7 +257,8 @@ const printPDF = order => {
   // Each product places its players at absolute positions 0..n-1
   // We need to find the highest position used across all products
   const maxPlayers = prodsConNomina.length>0 ? Math.max(...prodsConNomina.map(p=>(p.players||[]).length)) : 0;
-  const hasObs = prodsConNomina.some(p=>(p.players||[]).some(j=>j.obs));
+  // Por producto: ¿tiene algún jugador con obs?
+  const prodHasObs = prodsConNomina.map(p=>(p.players||[]).some(j=>j.obs));
 
   const nominaUnificadaHTML = prodsConNomina.length>0 && maxPlayers>0 ? `
   <div style="margin-top:12px;page-break-inside:avoid">
@@ -268,39 +269,41 @@ const printPDF = order => {
           <th rowspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db;border-right:2px solid #6b7280;width:30px">#</th>
           ${prodsConNomina.map((p,pi)=>{
             const hasNombre=(p.players||[]).some(j=>j.nombre);
-            return `<th colspan="${hasNombre?3:2}" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#111;border:1px solid #d1d5db;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${p.tipo}</th>`;
+            const hasObsProd=prodHasObs[pi];
+            const colspan=(hasNombre?3:2)+(hasObsProd?1:0);
+            return `<th colspan="${colspan}" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#111;border:1px solid #d1d5db;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${p.tipo}</th>`;
           }).join("")}
-          ${hasObs?`<th rowspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db">Obs.</th>`:""}
         </tr>
         <tr style="background:#f9fafb">
           ${prodsConNomina.map((p,pi)=>{
             const hasNombre=(p.players||[]).some(j=>j.nombre);
+            const hasObsProd=prodHasObs[pi];
+            const borderRight=pi<prodsConNomina.length-1?"border-right:3px solid #374151":"";
             return `${hasNombre?`<th style="padding:4px 6px;text-align:left;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb">Nombre</th>`:""}
             <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb">Talle</th>
-            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">Núm.</th>`;
+            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${hasObsProd?"":""+borderRight}">Núm.</th>
+            ${hasObsProd?`<th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${borderRight}">Obs.</th>`:""}`;
           }).join("")}
         </tr>
       </thead>
       <tbody>
         ${Array.from({length:maxPlayers},(_,i)=>{
-          // Get player name from first product that has this index
-          const refProd = prodsConNomina.find(p=>(p.players||[])[i]?.talle);
-          const refPlayer = refProd ? (refProd.players||[])[i] : null;
-          const nombre = refPlayer?.nombre || '—';
           const rowBg = i%2===0?"transparent":"#f9fafb";
           const cols = prodsConNomina.map((p,pi)=>{
             const players=(p.players||[]);
             const pj=players[i] && players[i].talle ? players[i] : null;
             const hasNombre=(p.players||[]).some(j=>j.nombre);
+            const hasObsProd=prodHasObs[pi];
+            const borderRight=pi<prodsConNomina.length-1?"border-right:3px solid #374151":"";
             const talle=pj?`<span style="background:#111;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:800">${pj.talle}</span>`:`<span style="color:#ccc">—</span>`;
             const num=pj?(pj.numero||"—"):"—";
             const nombreCell=hasNombre?`<td style="padding:4px 6px;border:1px solid #e5e7eb">${pj?.nombre||"—"}</td>`:"";
-            return `${nombreCell}<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${num}</td>`;
+            const obsCell=hasObsProd?`<td style="padding:4px 8px;border:1px solid #e5e7eb;${borderRight}">${pj?.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:3px;padding:1px 5px;font-size:10px;color:#92400e">⚠ ${pj.obs}</span>`:""}</td>`:"";
+            return `${nombreCell}<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${hasObsProd?"":borderRight}">${num}</td>${obsCell}`;
           }).join("");
-          const obsCell = hasObs ? `<td style="padding:4px 8px;border:1px solid #e5e7eb">${refPlayer?.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:3px;padding:1px 5px;font-size:10px;color:#92400e">⚠ ${refPlayer.obs}</span>`:""}</td>` : "";
           return `<tr style="background:${rowBg};border-bottom:1px solid #e5e7eb">
             <td style="padding:5px 8px;text-align:center;border:1px solid #e5e7eb;border-right:2px solid #6b7280;color:#9ca3af;font-family:monospace">${i+1}</td>
-            ${cols}${obsCell}
+            ${cols}
           </tr>`;
         }).join("")}
       </tbody>
