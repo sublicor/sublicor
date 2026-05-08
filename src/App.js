@@ -252,7 +252,7 @@ const printPDF = order => {
   }).join("");
 
   // Unified nomina with Talle+Num columns per product, separated by thick borders
-  const prodsConNomina = prods.filter(p=>(p.players||[]).some(j=>j.talle));
+  const prodsConNomina = prods.filter(p=>(p.players||[]).some(j=>j.nombre||j.talle||j.numero));
   // Total rows = max position across ALL products (not sum, but max index)
   // Each product places its players at absolute positions 0..n-1
   // We need to find the highest position used across all products
@@ -846,9 +846,9 @@ function DetailModal({order,onClose,onEdit,onChangeEstado,onUpdateOrder,onArchiv
   const estado=getE(order.estado);
   const days=daysUntil(order.fechaEntrega);
   const gc=GRADIENTS[order.products?.[0]?.tipo]||["#0a0a0a","#1f2937"];
-  const totalJug=order.products?.reduce((a,p)=>a+(p.players?.filter(j=>j.talle)?.length||0),0)||0;
+  const totalJug=order.products?.reduce((a,p)=>a+(p.players?.filter(j=>j.nombre||j.talle||j.numero)?.length||0),0)||0;
   const totalObs=order.products?.reduce((a,p)=>a+(p.players?.filter(j=>j.obs)?.length||0),0)||0;
-  const prodsConNomina=order.products?.filter(p=>p.players?.some(j=>j.talle))||[];
+  const prodsConNomina=order.products?.filter(p=>p.players?.some(j=>j.nombre||j.talle||j.numero))||[];
   const isGold=order.estado==="impresion";
 
   return (
