@@ -2105,21 +2105,28 @@ const [orders,setOrders]=useState([]);
 
   // Load from Supabase on mount - always use Supabase, never demos
   useEffect(()=>{
-    const loadOrders = () => {
+    let retryTimeout = null;
+    const loadOrders = (attempt=1) => {
+      const cached = store.get("slc_orders");
+      if(cached && cached.length>0 && attempt===1) setOrders(cached);
       supa.getOrders().then(data=>{
-        if(data!==null) setOrders(data);
+        if(data!==null){
+          setOrders(data);
+          store.set("slc_orders",data);
+        }
         setSupaLoaded(true);
       }).catch(()=>{
-        setSupaLoaded(true);
+        if(attempt<3){
+          retryTimeout = setTimeout(()=>loadOrders(attempt+1), attempt*5000);
+        } else {
+          setSupaLoaded(true);
+        }
       });
     };
-    // Load max num once on mount
     supa.getMaxNum().then(savedMax=>setMaxOrderNum(prev=>Math.max(prev,savedMax||0)));
-    // Load orders immediately
     loadOrders();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(loadOrders, 120000);
-    return ()=>clearInterval(interval);
+    const interval = setInterval(()=>loadOrders(), 300000);
+    return ()=>{clearInterval(interval);if(retryTimeout)clearTimeout(retryTimeout);};
   },[]);
   const [view,setView]=useState("dashboard");
   const [toast,setToast]=useState(null);
