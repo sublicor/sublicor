@@ -4,6 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
 const SUPA_URL = "https://kqkcfeaeoskcykycfgat.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa2NmZWFlb3NrY3lreWNmZ2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MDI2NTQsImV4cCI6MjA5MjQ3ODY1NH0.DXYaWsPslsc4VqpHzZ_DOuJr6OVoAl25aqewBbYM7-Y";
+let _supaToken = null;
+const getHeaders = () => ({
+  "apikey": SUPA_KEY,
+  "Authorization": "Bearer " + (_supaToken || SUPA_KEY),
+  "Content-Type": "application/json"
+});
 
 
 const toDb = o => ({
