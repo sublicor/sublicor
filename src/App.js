@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
 const SUPA_URL = "https://kqkcfeaeoskcykycfgat.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa2NmZWFlb3NrY3lreWNmZ2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MDI2NTQsImV4cCI6MjA5MjQ3ODY1NH0.DXYaWsPslsc4VqpHzZ_DOuJr6OVoAl25aqewBbYM7-Y";
-const SUPA_HEADERS = {"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
+
 
 const toDb = o => ({
   id:String(o.id), numero:Number(o.numero)||0,
@@ -27,9 +27,31 @@ const fromDb = o => ({...o,
 });
 
 const supa = {
+  async signIn(email, password) {
+    try {
+      const r = await fetch(SUPA_URL+"/auth/v1/token?grant_type=password", {
+        method:"POST",
+        headers:{"apikey":SUPA_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({email,password})
+      });
+      const data = await r.json();
+      if(!r.ok) return {error: data.error_description||data.msg||"Error de autenticación"};
+      _supaToken = data.access_token;
+      return {user: data.user, token: data.access_token};
+    } catch(e){return {error:"Error de conexión"};}
+  },
+  async signOut() {
+    try {
+      await fetch(SUPA_URL+"/auth/v1/logout", {
+        method:"POST",
+        headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+(_supaToken||SUPA_KEY)}
+      });
+    } catch(e){}
+    _supaToken = null;
+  },
   async getOrders() {
     try {
-      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=*&order=numero.asc", {headers:SUPA_HEADERS});
+      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=*&order=numero.asc", {headers:getHeaders()});
       if(!r.ok){console.error("supa get",r.status,await r.text());return null;}
       const data = await r.json();
       return data.map(fromDb);
@@ -40,7 +62,7 @@ const supa = {
       const body = JSON.stringify(toDb(order));
       const r = await fetch(SUPA_URL+"/rest/v1/orders", {
         method:"POST",
-        headers:{...SUPA_HEADERS,"Prefer":"resolution=merge-duplicates,return=minimal"},
+        headers:{...getHeaders(),"Prefer":"resolution=merge-duplicates,return=minimal"},
         body
       });
       if(!r.ok){console.error("supa upsert",r.status,await r.text());}
@@ -50,14 +72,14 @@ const supa = {
   async deleteOrder(id) {
     try {
       const r = await fetch(SUPA_URL+"/rest/v1/orders?id=eq."+id, {
-        method:"DELETE", headers:SUPA_HEADERS
+        method:"DELETE", headers:getHeaders()
       });
       return r.ok;
     } catch(e){return false;}
   },
   async getMaxNum() {
     try {
-      const r = await fetch(SUPA_URL+"/rest/v1/config?key=eq.maxordernum&select=value", {headers:SUPA_HEADERS});
+      const r = await fetch(SUPA_URL+"/rest/v1/config?key=eq.maxordernum&select=value", {headers:getHeaders()});
       if(!r.ok) return 0;
       const data = await r.json();
       return data.length>0 ? parseInt(data[0].value)||0 : 0;
@@ -67,7 +89,7 @@ const supa = {
     try {
       await fetch(SUPA_URL+"/rest/v1/config", {
         method:"POST",
-        headers:{...SUPA_HEADERS,"Prefer":"resolution=merge-duplicates,return=minimal"},
+        headers:{...getHeaders(),"Prefer":"resolution=merge-duplicates,return=minimal"},
         body:JSON.stringify({key:"maxordernum",value:String(num)})
       });
     } catch(e){}
@@ -76,7 +98,7 @@ const supa = {
     try {
       const r = await fetch(SUPA_URL+"/rest/v1/rpc/next_order_numero", {
         method:"POST",
-        headers:SUPA_HEADERS,
+        headers:getHeaders(),
         body:"{}"
       });
       if(!r.ok) throw new Error();
@@ -85,7 +107,7 @@ const supa = {
     } catch(e){
       // Fallback: max from orders
       try {
-        const r2 = await fetch(SUPA_URL+"/rest/v1/orders?select=numero&order=numero.desc&limit=1", {headers:SUPA_HEADERS});
+        const r2 = await fetch(SUPA_URL+"/rest/v1/orders?select=numero&order=numero.desc&limit=1", {headers:getHeaders()});
         const data = await r2.json();
         return (data.length>0 ? (data[0].numero||0) : 0) + 1;
       } catch(e2){return 1;}
@@ -427,7 +449,17 @@ const StateBadge = ({id}) => { const e=getE(id); return <span style={{display:"i
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
 function Login({onLogin}) {
   const [email,setEmail]=useState(""); const [pw,setPw]=useState(""); const [err,setErr]=useState(""); const [loading,setLoading]=useState(false);
-  const go=()=>{setLoading(true);setErr("");setTimeout(()=>{const u=DEMO_USERS.find(u=>u.email===email&&u.password===pw);if(u)onLogin(u);else setErr("Credenciales incorrectas");setLoading(false);},400);};
+  const go=async()=>{
+    setLoading(true);setErr("");
+    // First authenticate with Supabase to get session token
+    const auth = await supa.signIn(email, pw);
+    if(auth.error){setErr("Credenciales incorrectas");setLoading(false);return;}
+    // Then match local role
+    const u=DEMO_USERS.find(u=>u.email===email);
+    if(u){onLogin({...u,token:auth.token});}
+    else{setErr("Usuario no autorizado");}
+    setLoading(false);
+  };
   return (
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",background:G.bg}}>
       <div style={{width:"100%",maxWidth:"380px"}}>
@@ -2039,7 +2071,11 @@ function exportarExcel(orders) {
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [user,setUser]=useState(()=>store.get("slc_user"));
+  const [user,setUser]=useState(()=>{
+    const u=store.get("slc_user");
+    if(u && u.token){_supaToken=u.token;}
+    return u;
+  });
   const DEMO_ORDERS_INICIAL = [
   {id:"d1",numero:1,cliente:"Club Atlético Norte",equipo:"Primera División",fechaCreacion:"2025-04-01",fechaEntrega:"2025-04-22",observaciones:"Revisar colores del escudo antes de imprimir.",observacionesTaller:"Corte ranglán. Confirmar antes de sublimar.",estado:"impresion",taller:"Martha",tallerCustom:"",urgente:true,archived:false,faltantes:[],historial:[{de:"pendiente",a:"impresion",fecha:"02/04/2025, 09:15:00",rol:"vendedor"}],
     products:[
@@ -2201,7 +2237,7 @@ const [orders,setOrders]=useState([]);
                 <p style={{fontSize:"9px",color:G.goldDim,fontWeight:"700",textTransform:"uppercase",letterSpacing:"0.08em",marginTop:"2px"}}>{user.role==="director"?"Acceso total":user.role==="vendedor"?"Ventas":user.role==="impresor"?"Impresión":user.role==="sublimador"?"Sublimación":"Corte"}</p>
               </div>
             </div>
-            <button className="btn bg" style={{width:"100%",justifyContent:"center",fontSize:"12px"}} onClick={()=>setUser(null)}>
+            <button className="btn bg" style={{width:"100%",justifyContent:"center",fontSize:"12px"}} onClick={async()=>{await supa.signOut();setUser(null);}}>
               <Ic n="logout" s={14}/> Cerrar sesión
             </button>
           </div>
@@ -2259,7 +2295,7 @@ const [orders,setOrders]=useState([]);
             <span style={{fontSize:"9px",fontWeight:"700",fontFamily:"'Syne',sans-serif"}}>{n.l}</span>
           </button>
         ))}
-        <button onClick={()=>setUser(null)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",background:"transparent",border:"none",cursor:"pointer",padding:"4px 0",color:"#EF4444"}}>
+        <button onClick={async()=>{await supa.signOut();setUser(null);}} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",background:"transparent",border:"none",cursor:"pointer",padding:"4px 0",color:"#EF4444"}}>
           <Ic n="logout" s={20} c="#EF4444"/>
           <span style={{fontSize:"9px",fontWeight:"700",fontFamily:"'Syne',sans-serif"}}>Salir</span>
         </button>
