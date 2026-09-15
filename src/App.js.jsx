@@ -30,13 +30,22 @@ const supa = {
   async getOrders() {
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(()=>ctrl.abort(), 10000);
-      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=*&order=numero.asc", {headers:SUPA_HEADERS, signal:ctrl.signal});
+      const timer = setTimeout(()=>ctrl.abort(), 15000);
+      // Exclude heavy columns (products with base64 images) for initial load
+      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=id,numero,cliente,equipo,contacto,fechacreacion,fechaentrega,observaciones,observacionestaller,estado,taller,tallercustom,urgente,archived,faltantes,historial&order=numero.asc", {headers:SUPA_HEADERS, signal:ctrl.signal});
       clearTimeout(timer);
       if(!r.ok){console.error("supa get",r.status,await r.text());return null;}
       const data = await r.json();
-      return data.map(fromDb);
+      return data.map(o=>fromDb({...o, products:"[]"}));
     } catch(e){console.error("supa get ex",e);return null;}
+  },
+  async getOrderFull(id) {
+    try {
+      const r = await fetch(SUPA_URL+"/rest/v1/orders?id=eq."+id+"&select=*", {headers:SUPA_HEADERS});
+      if(!r.ok) return null;
+      const data = await r.json();
+      return data.length>0 ? fromDb(data[0]) : null;
+    } catch(e){return null;}
   },
   async upsertOrder(order) {
     try {
@@ -1266,7 +1275,7 @@ function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false,maxOrd
                       <KanbanCard order={order} draggingId={draggingId}
                         onDragStart={()=>setDraggingId(order.id)}
                         onDragEnd={()=>{setDraggingId(null);setDragOverCol(null);}}
-                        onClick={()=>setSelected(order)}
+                        onClick={()=>{setSelected(order);supa.getOrderFull(order.id).then(full=>{if(full)setSelected(full);});}}
                         onUploadClick={()=>{setUploadTarget(order.id);fileRef.current?.click();}}
                         style={{outline:isSelEnt?`2px solid ${G.red}`:"none",borderRadius:"9px"}}
                       />
@@ -1292,7 +1301,7 @@ function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false,maxOrd
             rol:user.role,
           }];
           const updated={...orden,estado,historial};
-          onEdit(updated);setSelected(updated);
+          editOrder(updated);setSelected(updated);
         }}
         onUpdateOrder={o=>{onEdit(o);setSelected(o);}}
         onArchive={id=>{onEdit({...orders.find(o=>o.id===id),archived:true});setSelected(null);}}
