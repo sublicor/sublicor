@@ -4,13 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // ─── SUPABASE ────────────────────────────────────────────────────────────────
 const SUPA_URL = "https://kqkcfeaeoskcykycfgat.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxa2NmZWFlb3NrY3lreWNmZ2F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MDI2NTQsImV4cCI6MjA5MjQ3ODY1NH0.DXYaWsPslsc4VqpHzZ_DOuJr6OVoAl25aqewBbYM7-Y";
-let _supaToken = null;
-const getHeaders = () => ({
-  "apikey": SUPA_KEY,
-  "Authorization": "Bearer " + (_supaToken || SUPA_KEY),
-  "Content-Type": "application/json"
-});
-
+const SUPA_HEADERS = {"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json"};
 
 const toDb = o => ({
   id:String(o.id), numero:Number(o.numero)||0,
@@ -35,7 +29,10 @@ const fromDb = o => ({...o,
 const supa = {
   async getOrders() {
     try {
-      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=*&order=numero.asc", {headers:getHeaders()});
+      const ctrl = new AbortController();
+      const timer = setTimeout(()=>ctrl.abort(), 10000);
+      const r = await fetch(SUPA_URL+"/rest/v1/orders?select=*&order=numero.asc", {headers:SUPA_HEADERS, signal:ctrl.signal});
+      clearTimeout(timer);
       if(!r.ok){console.error("supa get",r.status,await r.text());return null;}
       const data = await r.json();
       return data.map(fromDb);
@@ -46,7 +43,7 @@ const supa = {
       const body = JSON.stringify(toDb(order));
       const r = await fetch(SUPA_URL+"/rest/v1/orders", {
         method:"POST",
-        headers:{...getHeaders(),"Prefer":"resolution=merge-duplicates,return=minimal"},
+        headers:{...SUPA_HEADERS,"Prefer":"resolution=merge-duplicates,return=minimal"},
         body
       });
       if(!r.ok){console.error("supa upsert",r.status,await r.text());}
@@ -56,14 +53,14 @@ const supa = {
   async deleteOrder(id) {
     try {
       const r = await fetch(SUPA_URL+"/rest/v1/orders?id=eq."+id, {
-        method:"DELETE", headers:getHeaders()
+        method:"DELETE", headers:SUPA_HEADERS
       });
       return r.ok;
     } catch(e){return false;}
   },
   async getMaxNum() {
     try {
-      const r = await fetch(SUPA_URL+"/rest/v1/config?key=eq.maxordernum&select=value", {headers:getHeaders()});
+      const r = await fetch(SUPA_URL+"/rest/v1/config?key=eq.maxordernum&select=value", {headers:SUPA_HEADERS});
       if(!r.ok) return 0;
       const data = await r.json();
       return data.length>0 ? parseInt(data[0].value)||0 : 0;
@@ -73,7 +70,7 @@ const supa = {
     try {
       await fetch(SUPA_URL+"/rest/v1/config", {
         method:"POST",
-        headers:{...getHeaders(),"Prefer":"resolution=merge-duplicates,return=minimal"},
+        headers:{...SUPA_HEADERS,"Prefer":"resolution=merge-duplicates,return=minimal"},
         body:JSON.stringify({key:"maxordernum",value:String(num)})
       });
     } catch(e){}
@@ -82,7 +79,7 @@ const supa = {
     try {
       const r = await fetch(SUPA_URL+"/rest/v1/rpc/next_order_numero", {
         method:"POST",
-        headers:getHeaders(),
+        headers:SUPA_HEADERS,
         body:"{}"
       });
       if(!r.ok) throw new Error();
@@ -91,7 +88,7 @@ const supa = {
     } catch(e){
       // Fallback: max from orders
       try {
-        const r2 = await fetch(SUPA_URL+"/rest/v1/orders?select=numero&order=numero.desc&limit=1", {headers:getHeaders()});
+        const r2 = await fetch(SUPA_URL+"/rest/v1/orders?select=numero&order=numero.desc&limit=1", {headers:SUPA_HEADERS});
         const data = await r2.json();
         return (data.length>0 ? (data[0].numero||0) : 0) + 1;
       } catch(e2){return 1;}
@@ -244,7 +241,8 @@ const talleDist= players => {
 
 // ─── PDF ──────────────────────────────────────────────────────────────────────
 const printPDF = order => {
-  const w = window.open("","_blank"); if(!w) return;
+  const w = window.open("","_blank");
+  if(!w){alert("Tu navegador bloqueó la ventana emergente. Por favor habilitá las ventanas emergentes para este sitio.");return;}
   const estado = getE(order.estado);
   const prods = (order.products||[]);
   // Products summary section
@@ -258,13 +256,12 @@ const printPDF = order => {
   }).join("");
 
   // Unified nomina with Talle+Num columns per product, separated by thick borders
-  const prodsConNomina = prods.filter(p=>(p.players||[]).some(j=>j.nombre||j.talle||j.numero));
+  const prodsConNomina = prods.filter(p=>(p.players||[]).some(j=>j.talle));
   // Total rows = max position across ALL products (not sum, but max index)
   // Each product places its players at absolute positions 0..n-1
   // We need to find the highest position used across all products
   const maxPlayers = prodsConNomina.length>0 ? Math.max(...prodsConNomina.map(p=>(p.players||[]).length)) : 0;
-  // Por producto: ¿tiene algún jugador con obs?
-  const prodHasObs = prodsConNomina.map(p=>(p.players||[]).some(j=>j.obs));
+  const hasObs = prodsConNomina.some(p=>(p.players||[]).some(j=>j.obs));
 
   const nominaUnificadaHTML = prodsConNomina.length>0 && maxPlayers>0 ? `
   <div style="margin-top:12px;page-break-inside:avoid">
@@ -275,41 +272,39 @@ const printPDF = order => {
           <th rowspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db;border-right:2px solid #6b7280;width:30px">#</th>
           ${prodsConNomina.map((p,pi)=>{
             const hasNombre=(p.players||[]).some(j=>j.nombre);
-            const hasObsProd=prodHasObs[pi];
-            const colspan=(hasNombre?3:2)+(hasObsProd?1:0);
-            return `<th colspan="${colspan}" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#111;border:1px solid #d1d5db;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${p.tipo}</th>`;
+            return `<th colspan="${hasNombre?3:2}" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:#111;border:1px solid #d1d5db;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${p.tipo}</th>`;
           }).join("")}
+          ${hasObs?`<th rowspan="2" style="padding:5px 8px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;color:#374151;border:1px solid #d1d5db">Obs.</th>`:""}
         </tr>
         <tr style="background:#f9fafb">
           ${prodsConNomina.map((p,pi)=>{
             const hasNombre=(p.players||[]).some(j=>j.nombre);
-            const hasObsProd=prodHasObs[pi];
-            const borderRight=pi<prodsConNomina.length-1?"border-right:3px solid #374151":"";
             return `${hasNombre?`<th style="padding:4px 6px;text-align:left;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb">Nombre</th>`:""}
             <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb">Talle</th>
-            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${hasObsProd?"":""+borderRight}">Núm.</th>
-            ${hasObsProd?`<th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${borderRight}">Obs.</th>`:""}`;
+            <th style="padding:4px 6px;text-align:center;font-size:9px;font-weight:600;color:#6b7280;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">Núm.</th>`;
           }).join("")}
         </tr>
       </thead>
       <tbody>
         ${Array.from({length:maxPlayers},(_,i)=>{
+          // Get player name from first product that has this index
+          const refProd = prodsConNomina.find(p=>(p.players||[])[i]?.talle);
+          const refPlayer = refProd ? (refProd.players||[])[i] : null;
+          const nombre = refPlayer?.nombre || '—';
           const rowBg = i%2===0?"transparent":"#f9fafb";
           const cols = prodsConNomina.map((p,pi)=>{
             const players=(p.players||[]);
             const pj=players[i] && players[i].talle ? players[i] : null;
             const hasNombre=(p.players||[]).some(j=>j.nombre);
-            const hasObsProd=prodHasObs[pi];
-            const borderRight=pi<prodsConNomina.length-1?"border-right:3px solid #374151":"";
             const talle=pj?`<span style="background:#111;color:#fff;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:800">${pj.talle}</span>`:`<span style="color:#ccc">—</span>`;
             const num=pj?(pj.numero||"—"):"—";
             const nombreCell=hasNombre?`<td style="padding:4px 6px;border:1px solid #e5e7eb">${pj?.nombre||"—"}</td>`:"";
-            const obsCell=hasObsProd?`<td style="padding:4px 8px;border:1px solid #e5e7eb;${borderRight}">${pj?.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:3px;padding:1px 5px;font-size:10px;color:#92400e">⚠ ${pj.obs}</span>`:""}</td>`:"";
-            return `${nombreCell}<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${hasObsProd?"":borderRight}">${num}</td>${obsCell}`;
+            return `${nombreCell}<td style="padding:4px 6px;text-align:center;border:1px solid #e5e7eb">${talle}</td><td style="padding:4px 6px;text-align:center;font-family:monospace;font-weight:700;border:1px solid #e5e7eb;${pi<prodsConNomina.length-1?"border-right:3px solid #374151":""}">${num}</td>`;
           }).join("");
+          const obsCell = hasObs ? `<td style="padding:4px 8px;border:1px solid #e5e7eb">${refPlayer?.obs?`<span style="background:#fef3c7;border:1px solid #fde68a;border-radius:3px;padding:1px 5px;font-size:10px;color:#92400e">⚠ ${refPlayer.obs}</span>`:""}</td>` : "";
           return `<tr style="background:${rowBg};border-bottom:1px solid #e5e7eb">
             <td style="padding:5px 8px;text-align:center;border:1px solid #e5e7eb;border-right:2px solid #6b7280;color:#9ca3af;font-family:monospace">${i+1}</td>
-            ${cols}
+            ${cols}${obsCell}
           </tr>`;
         }).join("")}
       </tbody>
@@ -317,7 +312,7 @@ const printPDF = order => {
   </div>` : "";;
 
   const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Ficha #${fmtNum(order.numero)} — ${order.cliente}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:32px;max-width:860px;margin:0 auto;line-height:1.5;}@media print{body{padding:4px;max-width:100%;}.no-print{display:none!important;}@page{margin:1cm;size:A4;}table{width:100%!important;}}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#111;background:#fff;padding:32px;max-width:860px;margin:0 auto;line-height:1.5;}@media print{body{padding:12px;}.no-print{display:none!important;}@page{margin:1.2cm;size:A4;}}</style>
 </head><body>
 <div class="no-print" style="margin-bottom:20px;display:flex;gap:10px;align-items:center">
   <button onclick="window.print()" style="background:#111;color:#fff;padding:10px 22px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700">🖨️ Imprimir / Guardar PDF</button>
@@ -852,9 +847,9 @@ function DetailModal({order,onClose,onEdit,onChangeEstado,onUpdateOrder,onArchiv
   const estado=getE(order.estado);
   const days=daysUntil(order.fechaEntrega);
   const gc=GRADIENTS[order.products?.[0]?.tipo]||["#0a0a0a","#1f2937"];
-  const totalJug=order.products?.reduce((a,p)=>a+(p.players?.filter(j=>j.nombre||j.talle||j.numero)?.length||0),0)||0;
+  const totalJug=order.products?.reduce((a,p)=>a+(p.players?.filter(j=>j.talle)?.length||0),0)||0;
   const totalObs=order.products?.reduce((a,p)=>a+(p.players?.filter(j=>j.obs)?.length||0),0)||0;
-  const prodsConNomina=order.products?.filter(p=>p.players?.some(j=>j.nombre||j.talle||j.numero))||[];
+  const prodsConNomina=order.products?.filter(p=>p.players?.some(j=>j.talle))||[];
   const isGold=order.estado==="impresion";
 
   return (
@@ -1294,7 +1289,7 @@ function KanbanView({orders,onAdd,onEdit,onDelete,role,showArchived=false,maxOrd
           const historial=[...(orden.historial||[]),{
             de:orden.estado, a:estado,
             fecha:new Date().toLocaleString("es-AR"),
-            rol:role,
+            rol:user.role,
           }];
           const updated={...orden,estado,historial};
           onEdit(updated);setSelected(updated);
@@ -2111,28 +2106,21 @@ const [orders,setOrders]=useState([]);
 
   // Load from Supabase on mount - always use Supabase, never demos
   useEffect(()=>{
-    let retryTimeout = null;
-    const loadOrders = (attempt=1) => {
-      const cached = store.get("slc_orders");
-      if(cached && cached.length>0 && attempt===1) setOrders(cached);
+    const loadOrders = () => {
       supa.getOrders().then(data=>{
-        if(data!==null){
-          setOrders(data);
-          store.set("slc_orders",data);
-        }
+        if(data!==null) setOrders(data);
         setSupaLoaded(true);
       }).catch(()=>{
-        if(attempt<3){
-          retryTimeout = setTimeout(()=>loadOrders(attempt+1), attempt*5000);
-        } else {
-          setSupaLoaded(true);
-        }
+        setSupaLoaded(true);
       });
     };
+    // Load max num once on mount
     supa.getMaxNum().then(savedMax=>setMaxOrderNum(prev=>Math.max(prev,savedMax||0)));
+    // Load orders immediately
     loadOrders();
-    const interval = setInterval(()=>loadOrders(), 300000);
-    return ()=>{clearInterval(interval);if(retryTimeout)clearTimeout(retryTimeout);};
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(loadOrders, 120000);
+    return ()=>clearInterval(interval);
   },[]);
   const [view,setView]=useState("dashboard");
   const [toast,setToast]=useState(null);
@@ -2161,7 +2149,7 @@ const [orders,setOrders]=useState([]);
     showToast("Pedido eliminado","#EF4444");
   };
 
-  if(!user) return (<><Styles/><Login onLogin={u=>{setUser(u);showToast(`Bienvenido, ${u.name}`);}} /></>);
+  if(!user) return (<><Styles/><Login onLogin={u=>{setUser(u);setSupaLoaded(false);setOrders([]);showToast(`Bienvenido, ${u.name}`);}} /></>);
 
   const nav=[
     {id:"dashboard",l:"Tablero", n:"home",    roles:Object.values(ROLES)},
